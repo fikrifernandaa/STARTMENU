@@ -45,24 +45,44 @@ public class Renderer {
     //  WALLPAPER
     // =====================================================================
     void drawWallpaper(Graphics2D g) {
-        GradientPaint sky = new GradientPaint(0, 0, new Color(4, 14, 38),
-                0, StartMenuClone.SH - StartMenuClone.TB_H, new Color(30, 72, 140));
+        int W = StartMenuClone.SW;
+        int H = StartMenuClone.SH - StartMenuClone.TB_H;
+
+        // Latar belakang gradasi biru gelap khas Windows 7
+        GradientPaint sky = new GradientPaint(0, 0, new Color(10, 40, 90),
+                0, H, new Color(50, 110, 180));
         g.setPaint(sky);
-        g.fillRect(0, 0, StartMenuClone.SW, StartMenuClone.SH - StartMenuClone.TB_H);
+        g.fillRect(0, 0, W, H);
 
+        // Cahaya lembut di belakang logo
+        int cx = W / 2, cy = H / 2;
 
-        // Pegunungan siluet
-        g.setColor(new Color(8, 18, 42));
-        int[] mx = {0, 80, 160, 240, 310, 380, 440, 520, 590, 680, 760, 840, 920, StartMenuClone.SW};
-        int[] my = {StartMenuClone.SH - StartMenuClone.TB_H,
-                StartMenuClone.SH - StartMenuClone.TB_H - 80, StartMenuClone.SH - StartMenuClone.TB_H - 140,
-                StartMenuClone.SH - StartMenuClone.TB_H - 90, StartMenuClone.SH - StartMenuClone.TB_H - 170,
-                StartMenuClone.SH - StartMenuClone.TB_H - 100, StartMenuClone.SH - StartMenuClone.TB_H - 155,
-                StartMenuClone.SH - StartMenuClone.TB_H - 85, StartMenuClone.SH - StartMenuClone.TB_H - 145,
-                StartMenuClone.SH - StartMenuClone.TB_H - 70, StartMenuClone.SH - StartMenuClone.TB_H - 130,
-                StartMenuClone.SH - StartMenuClone.TB_H - 95, StartMenuClone.SH - StartMenuClone.TB_H - 160,
-                StartMenuClone.SH - StartMenuClone.TB_H};
-        g.fillPolygon(mx, my, mx.length);
+        // ── Logo Windows 7 (4 kelopak melengkung, gaya orb) ─────────────
+        int logoR = 110; // radius logo
+        Color[] petalColors = {
+                new Color(60, 140, 220),  // biru
+                new Color(245, 195, 40),   // kuning
+                new Color(120, 190, 60),  // hijau
+                new Color(235, 75, 65),   // merah
+        };
+
+        // Empat kelopak disusun melingkar dengan sedikit rotasi & celah
+        double[] startAngles = {180, 90, 0, 270}; // posisi tiap kelopak (derajat)
+        for (int i = 0; i < 4; i++) {
+            Graphics2D gp = (Graphics2D) g.create();
+            gp.setColor(petalColors[i]);
+            gp.translate(cx, cy);
+            gp.rotate(Math.toRadians(startAngles[i]));
+            // Bentuk kelopak: oval dipotong jadi seperempat lingkaran melengkung
+            gp.fillArc(-logoR, -logoR, logoR * 2, logoR * 2, 2, 86);
+            gp.dispose();
+        }
+
+        // Lubang tengah (celah hitam transparan agar mirip logo asli)
+        g.setColor(new Color(10, 40, 90));
+        int gapW = 10;
+        g.fillRect(cx - gapW / 2, cy - logoR, gapW, logoR * 2);
+        g.fillRect(cx - logoR, cy - gapW / 2, logoR * 2, gapW);
     }
 
     // ── Ikon Desktop ────────────────────────────────────────────────────
