@@ -174,7 +174,7 @@ public class StartMenuClone extends Frame implements Runnable {
         mainList.add(new AppItem("Calendar",      "generic",     "C",  new Color(60,120,170)));
         mainList.add(new AppItem("Windows Update",      "generic",     "UPD", new Color(190,55,55)));
         mainList.add(new AppItem("WPS Office",          "generic",     "WPS",   new Color(120,75,165)));
-        mainList.add(new AppItem("Accessories",         "folder",      "",    new Color(225,190,70)));
+        mainList.add(new AppItem("All Program",         "folder",      "",    new Color(225,190,70)));
 
         // Kolom kiri: accessories
         accList.add(new AppItem("Calculator",           "calc",    "",   new Color(80,80,90)));

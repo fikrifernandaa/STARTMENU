@@ -1,7 +1,5 @@
 import java.awt.*;
 import java.awt.image.BufferStrategy;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -52,70 +50,20 @@ public class Renderer {
         g.setPaint(sky);
         g.fillRect(0, 0, StartMenuClone.SW, StartMenuClone.SH - StartMenuClone.TB_H);
 
-        // Bintang berkedip
-        for (int i = 0; i < app.starX.length; i++) {
-            int b = app.starBright[i];
-            g.setColor(new Color(b, b, Math.min(255, b + 30), b));
-            int sz = (b > 200) ? 2 : 1;
-            g.fillOval(app.starX[i] - sz / 2, app.starY[i] - sz / 2, sz + 1, sz + 1);
-        }
-
-        // Awan bercahaya
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.18f));
-        for (int i = 0; i < app.cloudX.length; i++) {
-            int cx = app.cloudX[i], cy = app.cloudY[i];
-            Color cc = (i % 2 == 0) ? new Color(80, 120, 220) : new Color(140, 80, 200);
-            g.setColor(cc);
-            g.fillOval(cx - 55, cy - 20, 110, 40);
-            g.fillOval(cx - 35, cy - 32, 70,  35);
-            g.fillOval(cx + 10, cy - 18, 60,  32);
-        }
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
-
-        // Cahaya bulan
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.28f));
-        for (int r = 5; r >= 0; r--) {
-            int alpha = 40 + r * 30;
-            g.setColor(new Color(200, 220, 255, Math.min(255, alpha)));
-            g.fillOval(StartMenuClone.SW - 100 - (r * 18), 18 - (r * 8), 70 + r * 18, 70 + r * 18);
-        }
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
-        g.setColor(new Color(240, 248, 255));
-        g.fillOval(StartMenuClone.SW - 88, 22, 62, 62);
-        g.setColor(new Color(210, 225, 248));
-        g.fillOval(StartMenuClone.SW - 76, 30, 15, 12);
-        g.fillOval(StartMenuClone.SW - 55, 50, 10,  9);
-        g.fillOval(StartMenuClone.SW - 78, 55,  8,  7);
 
         // Pegunungan siluet
         g.setColor(new Color(8, 18, 42));
-        int[] mx = {0,80,160,240,310,380,440,520,590,680,760,840,920, StartMenuClone.SW};
-        int[] my = {StartMenuClone.SH-StartMenuClone.TB_H,
-                StartMenuClone.SH-StartMenuClone.TB_H-80,  StartMenuClone.SH-StartMenuClone.TB_H-140,
-                StartMenuClone.SH-StartMenuClone.TB_H-90,  StartMenuClone.SH-StartMenuClone.TB_H-170,
-                StartMenuClone.SH-StartMenuClone.TB_H-100, StartMenuClone.SH-StartMenuClone.TB_H-155,
-                StartMenuClone.SH-StartMenuClone.TB_H-85,  StartMenuClone.SH-StartMenuClone.TB_H-145,
-                StartMenuClone.SH-StartMenuClone.TB_H-70,  StartMenuClone.SH-StartMenuClone.TB_H-130,
-                StartMenuClone.SH-StartMenuClone.TB_H-95,  StartMenuClone.SH-StartMenuClone.TB_H-160,
-                StartMenuClone.SH-StartMenuClone.TB_H};
+        int[] mx = {0, 80, 160, 240, 310, 380, 440, 520, 590, 680, 760, 840, 920, StartMenuClone.SW};
+        int[] my = {StartMenuClone.SH - StartMenuClone.TB_H,
+                StartMenuClone.SH - StartMenuClone.TB_H - 80, StartMenuClone.SH - StartMenuClone.TB_H - 140,
+                StartMenuClone.SH - StartMenuClone.TB_H - 90, StartMenuClone.SH - StartMenuClone.TB_H - 170,
+                StartMenuClone.SH - StartMenuClone.TB_H - 100, StartMenuClone.SH - StartMenuClone.TB_H - 155,
+                StartMenuClone.SH - StartMenuClone.TB_H - 85, StartMenuClone.SH - StartMenuClone.TB_H - 145,
+                StartMenuClone.SH - StartMenuClone.TB_H - 70, StartMenuClone.SH - StartMenuClone.TB_H - 130,
+                StartMenuClone.SH - StartMenuClone.TB_H - 95, StartMenuClone.SH - StartMenuClone.TB_H - 160,
+                StartMenuClone.SH - StartMenuClone.TB_H};
         g.fillPolygon(mx, my, mx.length);
-
-        // Kota cakrawala
-        g.setColor(new Color(12, 25, 55));
-        int[] bx = {40,70,100,130,160,190,220,260,290,330,360,400,440,500,540,580,630,680,730,780,830,880,930,970};
-        int[] bh = {22,35,18, 40, 28, 15, 45, 30, 20, 42, 25, 18, 38, 22, 35, 15, 28, 40, 18, 32, 25, 42, 20, 35};
-        for (int i = 0; i < bx.length; i++) {
-            g.fillRect(bx[i], StartMenuClone.SH - StartMenuClone.TB_H - bh[i], 14 + (i % 3) * 4, bh[i]);
-            if (i % 2 == 0) {
-                g.setColor(new Color(255, 240, 150, 160));
-                for (int row = 0; row < bh[i] / 8; row++)
-                    for (int col = 0; col < 2; col++)
-                        g.fillRect(bx[i] + 2 + col * 6,
-                                StartMenuClone.SH - StartMenuClone.TB_H - bh[i] + 4 + row * 8, 3, 3);
-                g.setColor(new Color(12, 25, 55));
-            }
-        }
-}
+    }
 
     // ── Ikon Desktop ────────────────────────────────────────────────────
     void drawDesktopIcons(Graphics2D g) {
@@ -196,7 +144,7 @@ public class Renderer {
         drawStartBtn(g, y);
 
         // Quick launch
-        String[] ql = {"e", "📁", "🎵"};
+        String[] ql = {"📁", "🎵"};
         Color[]  qc = {new Color(35, 125, 215), new Color(235, 185, 35), new Color(185, 55, 55)};
         for (int i = 0; i < ql.length; i++) {
             int bx = 78 + i * 36, by = y + 6;
@@ -210,8 +158,8 @@ public class Renderer {
         }
 
         // Jam & tanggal
-        String time = new SimpleDateFormat("HH:mm").format(new Date());
-        String date = new SimpleDateFormat("dd/MM/yyyy").format(new Date());
+        String time = "10:30";
+        String date = "13/12/2004";
         g.setColor(Color.WHITE);
         g.setFont(StartMenuClone.F_CLOCK);
         g.drawString(time, StartMenuClone.SW - 70, y + 18);
@@ -220,10 +168,10 @@ public class Renderer {
         g.drawString(date, StartMenuClone.SW - 70, y + 32);
         g.setColor(new Color(255, 255, 255, 55));
         g.drawLine(StartMenuClone.SW - 85, y + 5, StartMenuClone.SW - 85, y + StartMenuClone.TB_H - 5);
-    }
+        }
 
     void drawStartBtn(Graphics2D g, int ty) {
-        int w = 72, h = StartMenuClone.TB_H;
+        int w = 50, h = StartMenuClone.TB_H;
         boolean on = app.hovStart || app.menuOpen;
         GradientPaint gp = on
                 ? new GradientPaint(0, ty, new Color(80, 175, 105), 0, ty + h, new Color(35, 115, 55))
@@ -243,9 +191,6 @@ public class Renderer {
         g.setColor(wc[2]); g.fillRect(cx - s - gap,  cy + gap,     s, s);
         g.setColor(wc[3]); g.fillRect(cx + gap,       cy + gap,     s, s);
 
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Trebuchet MS", Font.BOLD, 13));
-        g.drawString("Start", 36, ty + 25);
     }
 
     // =====================================================================
@@ -321,8 +266,7 @@ public class Renderer {
 
             if (a.isFolder()) {
                 gc.setColor(StartMenuClone.C_GRAY);
-                gc.setFont(StartMenuClone.F_SMALL);
-                gc.drawString("▶", StartMenuClone.L_W - 18, iy + 17);
+                drawArrow(gc, StartMenuClone.L_W - 18, iy + 7);
             }
         }
         gc.dispose();
@@ -402,10 +346,16 @@ public class Renderer {
             g.drawString(a.name, rx + 22, iy + 16);
             if (a.hasArrow) {
                 g.setColor(StartMenuClone.C_GRAY);
-                g.setFont(StartMenuClone.F_SMALL);
-                g.drawString("▶", StartMenuClone.MNU_W - 16, iy + 16);
+                drawArrow(g, StartMenuClone.MNU_W - 16, iy + 6);
             }
         }
+    }
+
+    // ── Helper: gambar panah segitiga manual (pengganti karakter "▶") ──────
+    void drawArrow(Graphics2D g, int x, int y) {
+        int[] px = {x, x + 6, x};
+        int[] py = {y, y + 5, y + 10};
+        g.fillPolygon(px, py, 3);
     }
 
     // ── Search Bar ───────────────────────────────────────────────────────
@@ -460,8 +410,14 @@ public class Renderer {
         g.setPaint(gp2);
         g.fillRoundRect(bx + mw + 2, by, bw - mw - 2, bh, 5, 5);
         g.setColor(Color.WHITE);
-        g.setFont(StartMenuClone.F_ITEM);
-        g.drawString("▲", bx + mw + 8, by + 18);
+        drawArrowUp(g, bx + mw + (bw - mw - 2) / 2, by + 9);
+    }
+
+    // ── Helper: gambar panah segitiga ke atas (pengganti karakter "▲") ─────
+    void drawArrowUp(Graphics2D g, int cx, int cy) {
+        int[] px = {cx - 5, cx + 5, cx};
+        int[] py = {cy + 8, cy + 8, cy};
+        g.fillPolygon(px, py, 3);
     }
 
     void drawShutDrop(Graphics2D g) {
