@@ -1,5 +1,4 @@
 import java.awt.*;
-import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,7 +6,18 @@ import java.util.List;
  * Kelas utama aplikasi.
  * Mengelola state, game-loop, data menu, dan aksi pengguna.
  * Rendering didelegasikan ke {@link Renderer}.
- * Input didelegasikan ke {@link InputHandler}.
+ * Logika input (klik, hover, keyboard) didelegasikan ke {@link InputHandler}.
+ *
+ * Catatan arsitektur input:
+ * Class ini TIDAK meng-implement MouseListener/KeyListener/WindowListener
+ * dan TIDAK memanggil addMouseListener/addKeyListener/addWindowListener.
+ * Sebagai gantinya, satu listener tunggal didaftarkan langsung ke
+ * java.awt.Toolkit (lihat konstruktor + method dispatchRawEvent). Listener
+ * itu adalah satu-satunya titik di seluruh program yang menyentuh tipe
+ * data dari java.awt.event, dan fungsinya murni menerjemahkan event mentah
+ * menjadi pemanggilan method InputHandler dengan parameter primitif
+ * (int x, int y, char c, dst) — mirip gaya pembacaan status mouse/keyboard
+ * di pustaka grafis dasar seperti GDI/BGI.
  */
 public class StartMenuClone extends Frame implements Runnable {
 
@@ -27,8 +37,6 @@ public class StartMenuClone extends Frame implements Runnable {
     static final int HEAD_H = 70;
 
     // Warna tema
-    static final Color C_SKY1   = new Color(8,   42,  88);
-    static final Color C_SKY2   = new Color(58,  120, 185);
     static final Color C_TB     = new Color(22,   30,  50);
     static final Color C_TB2    = new Color(10,   18,  36);
     static final Color C_START1 = new Color(50,  155,  90);
@@ -121,6 +129,11 @@ public class StartMenuClone extends Frame implements Runnable {
 
     // Helper
     private Renderer renderer;
+    private InputHandler inputHandler;
+
+    // Posisi mouse terakhir & status drag (dibaca InputHandler.processScroll)
+    int lastMouseX = -1, lastMouseY = -1;
+    private boolean mouseButtonDown = false;
 
     // =====================================================================
     //  KONSTRUKTOR
@@ -139,27 +152,77 @@ public class StartMenuClone extends Frame implements Runnable {
         buildData();
         buildStars();
 
-        renderer = new Renderer(this);
-
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                running = false; dispose(); System.exit(0);
-            }
-        });
+        renderer     = new Renderer(this);
+        inputHandler = new InputHandler(this);
 
         setVisible(true);
         canvas.createBufferStrategy(2);
         canvas.requestFocus();
 
-        // Pasang input handler
-        InputHandler h = new InputHandler(this);
-        canvas.addMouseListener(h);
-        canvas.addMouseMotionListener(h);
-        canvas.addMouseWheelListener(h);
-        canvas.addKeyListener(h);
+        // Daftarkan SATU listener global ke Toolkit (bukan addMouseListener/
+        // addKeyListener/addWindowListener per komponen). Listener ini hanya
+        // menjadi jembatan: ia membaca koordinat/kode tombol dari event mentah
+        // lalu meneruskannya sebagai nilai primitif (int/char/boolean) ke
+        // InputHandler, yang sama sekali tidak bergantung pada java.awt.event.
+        java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(
+                this::dispatchRawEvent,
+                java.awt.AWTEvent.MOUSE_EVENT_MASK
+                        | java.awt.AWTEvent.MOUSE_MOTION_EVENT_MASK
+                        | java.awt.AWTEvent.MOUSE_WHEEL_EVENT_MASK
+                        | java.awt.AWTEvent.KEY_EVENT_MASK
+                        | java.awt.AWTEvent.WINDOW_EVENT_MASK
+        );
 
         lastFrame = System.currentTimeMillis();
         new Thread(this, "render-loop").start();
+    }
+
+    /**
+     * Satu-satunya tempat di seluruh program yang menyentuh tipe-tipe dari
+     * java.awt.event (MouseEvent, KeyEvent, WindowEvent, MouseWheelEvent,
+     * AWTEventListener). Fungsinya murni "menerjemahkan" event mentah AWT
+     * menjadi pemanggilan method InputHandler dengan parameter primitif —
+     * tidak ada class lain di project ini yang meng-extend/implement
+     * antarmuka listener apa pun dari java.awt.event.
+     */
+    private void dispatchRawEvent(java.awt.AWTEvent ev) {
+        if (ev instanceof java.awt.event.MouseWheelEvent) {
+            java.awt.event.MouseWheelEvent we = (java.awt.event.MouseWheelEvent) ev;
+            inputHandler.processScroll(we.getWheelRotation());
+            return;
+        }
+        if (ev instanceof java.awt.event.MouseEvent) {
+            java.awt.event.MouseEvent me = (java.awt.event.MouseEvent) ev;
+            int id = me.getID();
+            int mx = me.getX(), my = me.getY();
+            lastMouseX = mx; lastMouseY = my;
+            if (id == java.awt.event.MouseEvent.MOUSE_PRESSED) {
+                mouseButtonDown = true;
+                inputHandler.processClick(mx, my);
+            } else if (id == java.awt.event.MouseEvent.MOUSE_RELEASED) {
+                mouseButtonDown = false;
+                inputHandler.processRelease();
+            } else if (id == java.awt.event.MouseEvent.MOUSE_MOVED
+                    || id == java.awt.event.MouseEvent.MOUSE_DRAGGED) {
+                inputHandler.processMouseMove(mx, my, mouseButtonDown);
+            }
+            return;
+        }
+        if (ev instanceof java.awt.event.KeyEvent) {
+            java.awt.event.KeyEvent ke = (java.awt.event.KeyEvent) ev;
+            if (ke.getID() == java.awt.event.KeyEvent.KEY_TYPED) {
+                inputHandler.processCharTyped(ke.getKeyChar());
+            } else if (ke.getID() == java.awt.event.KeyEvent.KEY_PRESSED) {
+                inputHandler.processSpecialKey(ke.getKeyCode());
+            }
+            return;
+        }
+        if (ev instanceof java.awt.event.WindowEvent) {
+            java.awt.event.WindowEvent we = (java.awt.event.WindowEvent) ev;
+            if (we.getID() == java.awt.event.WindowEvent.WINDOW_CLOSING) {
+                running = false; dispose(); System.exit(0);
+            }
+        }
     }
 
     // =====================================================================
@@ -243,7 +306,7 @@ public class StartMenuClone extends Frame implements Runnable {
         if (restarting   && System.currentTimeMillis() - shutStartMs > 1000) {
             running = false; dispose();
             System.out.println("Restarting...");
-            EventQueue.invokeLater(StartMenuClone::new);
+            new StartMenuClone();
         }
 
         // Toast timeout
@@ -336,9 +399,6 @@ public class StartMenuClone extends Frame implements Runnable {
         }
     }
 
-    // =====================================================================
-    //  HELPER – diakses oleh InputHandler
-    // =====================================================================
     List<AppItem> buildSearchList(boolean searching) {
         if (!searching) return inAccessories ? accList : mainList;
         List<AppItem> res = new ArrayList<>();

@@ -11,7 +11,6 @@ import java.awt.Color;
 
 /**
  * Model data untuk satu item aplikasi di Start Menu.
- *
  * Field:
  *   name     – label yang ditampilkan di menu
  *   iconType – kunci tipe ikon (digunakan Renderer untuk memilih gambar)
@@ -47,11 +46,8 @@ class AppItem {
     }
 }
 
-// -----------------------------------------------------------------------------
-
 /**
- * Merepresentasikan sebuah jendela aplikasi palsu yang tampil di desktop.
- *
+ * Merepresentasikan sebuah jendela aplikasi yang tampil di desktop.
  * Field:
  *   title     – judul jendela (sama dengan AppItem.name yang diluncurkan)
  *   iconType  – dipakai Renderer untuk memilih konten yang digambar di body

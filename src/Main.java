@@ -1,5 +1,3 @@
-import java.awt.EventQueue;
-
 /**
  * Entry point aplikasi Tiruan Start Menu Windows 7.
  *
@@ -9,6 +7,6 @@ import java.awt.EventQueue;
  */
 public class Main {
     public static void main(String[] args) {
-        EventQueue.invokeLater(StartMenuClone::new);
+        new StartMenuClone();
     }
 }

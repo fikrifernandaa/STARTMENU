@@ -1,11 +1,18 @@
-import java.awt.event.*;
 import java.util.List;
 
 /**
- * Menangani semua input dari mouse (klik, geser, scroll) dan keyboard.
- * Di-attach ke canvas milik StartMenuClone.
+ * Menangani logika input (klik, geser, scroll, keyboard).
+ *
+ * Class ini TIDAK meng-extend / meng-implement antarmuka apa pun dari
+ * java.awt.event (tidak ada MouseAdapter, MouseListener, KeyListener, dsb).
+ * Class ini murni berisi method-method polling biasa yang dipanggil secara
+ * manual dari titik tunggal penangkap event mentah di StartMenuClone
+ * (lihat StartMenuClone.dispatchRawEvent). Dengan begitu, InputHandler
+ * sendiri hanya bekerja dengan tipe data primitif (int, char, boolean),
+ * persis seperti gaya pemrosesan input di GDI/BGI klasik (membaca posisi
+ * & status tombol, lalu memutuskan aksi lewat perbandingan koordinat).
  */
-public class InputHandler extends MouseAdapter implements KeyListener {
+public class InputHandler {
 
     private final StartMenuClone app;
 
@@ -14,37 +21,32 @@ public class InputHandler extends MouseAdapter implements KeyListener {
     }
 
     // =====================================================================
-    //  MOUSE EVENTS
+    //  MOUSE — dipanggil dari StartMenuClone berdasarkan event mentah
     // =====================================================================
 
-    @Override
-    public void mouseMoved(MouseEvent e) {
-        updateHover(e.getX(), e.getY());
-    }
-
-    @Override
-    public void mouseDragged(MouseEvent e) {
-        if (app.dragging != null) {
-            app.dragging.x = e.getX() - app.dragDX;
-            app.dragging.y = e.getY() - app.dragDY;
+    /** Dipanggil saat posisi mouse berubah (gerak biasa atau drag). */
+    public void processMouseMove(int mx, int my, boolean dragging) {
+        if (dragging && app.dragging != null) {
+            app.dragging.x = mx - app.dragDX;
+            app.dragging.y = my - app.dragDY;
+        } else {
+            updateHover(mx, my);
         }
     }
 
-    @Override
-    public void mouseWheelMoved(MouseWheelEvent e) {
+    /** Dipanggil saat roda scroll digerakkan. rotation: -1 (atas) / +1 (bawah). */
+    public void processScroll(int rotation) {
         if (!app.menuReady()) return;
-        int mx = e.getX(), my = e.getY();
         int py = (int) app.menuPanelY;
+        int mx = app.lastMouseX, my = app.lastMouseY;
         if (mx >= 0 && mx <= StartMenuClone.L_W && my >= py && my <= py + StartMenuClone.MNU_H) {
-            app.scrollOff += e.getWheelRotation() * StartMenuClone.ITEM_H;
+            app.scrollOff += rotation * StartMenuClone.ITEM_H;
             if (app.scrollOff < 0) app.scrollOff = 0;
         }
     }
 
-    @Override
-    public void mousePressed(MouseEvent e) {
-        int mx = e.getX(), my = e.getY();
-
+    /** Dipanggil saat tombol mouse kiri ditekan (klik). */
+    public void processClick(int mx, int my) {
         // ── Sleep: klik mana saja = bangun ───────────────────────────
         if (app.sleeping) { app.sleeping = false; return; }
         if (app.shuttingDown || app.restarting) return;
@@ -143,8 +145,8 @@ public class InputHandler extends MouseAdapter implements KeyListener {
         }
     }
 
-    @Override
-    public void mouseReleased(MouseEvent e) {
+    /** Dipanggil saat tombol mouse dilepas. */
+    public void processRelease() {
         app.dragging = null;
     }
 
@@ -199,33 +201,35 @@ public class InputHandler extends MouseAdapter implements KeyListener {
     }
 
     // =====================================================================
-    //  KEYBOARD
+    //  KEYBOARD — dipanggil dengan kode tombol & karakter mentah (int/char)
     // =====================================================================
-    @Override
-    public void keyTyped(KeyEvent e) {
+
+    /** Dipanggil saat sebuah karakter dapat dicetak diketik (huruf, angka, simbol). */
+    public void processCharTyped(char c) {
         if (!app.searchFocused) return;
-        char c = e.getKeyChar();
         if (c >= 32 && c < 127 && app.searchText.length() < 42) {
             app.searchText += c;
             app.scrollOff  = 0;
         }
     }
 
-    @Override
-    public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+    /** Kode tombol non-cetak yang dikenali (nilai sama dengan KeyEvent.VK_*,
+     *  tapi di sini hanya dipakai sebagai angka biasa, tanpa import KeyEvent). */
+    public static final int KEY_ESCAPE    = 27;  // sama dengan VK_ESCAPE
+    public static final int KEY_BACKSPACE = 8;   // sama dengan VK_BACK_SPACE
+
+    /** Dipanggil saat tombol non-cetak ditekan (Escape, Backspace, dst). */
+    public void processSpecialKey(int keyCode) {
+        if (keyCode == KEY_ESCAPE) {
             if (app.searchFocused) { app.searchText = ""; app.searchFocused = false; }
             else app.closeMenu();
         }
         if (!app.searchFocused) return;
-        if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE && app.searchText.length() > 0)
+        if (keyCode == KEY_BACKSPACE && app.searchText.length() > 0)
             app.searchText = app.searchText.substring(0, app.searchText.length() - 1);
     }
 
-    @Override
-    public void keyReleased(KeyEvent e) { /* tidak digunakan */ }
-
-    // ── Helper ───────────────────────────────────────────────────────────
+    // ── Helper ──────────────────────────────────────────────────────────
     boolean inside(int px, int py, int x, int y, int w, int h) {
         return px >= x && px <= x + w && py >= y && py <= y + h;
     }

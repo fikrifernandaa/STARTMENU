@@ -54,7 +54,6 @@ public class Renderer {
         g.setPaint(sky);
         g.fillRect(0, 0, W, H);
 
-        // Cahaya lembut di belakang logo
         int cx = W / 2, cy = H / 2;
 
         // ── Logo Windows 7 (4 kelopak melengkung, gaya orb) ─────────────
@@ -73,7 +72,6 @@ public class Renderer {
             gp.setColor(petalColors[i]);
             gp.translate(cx, cy);
             gp.rotate(Math.toRadians(startAngles[i]));
-            // Bentuk kelopak: oval dipotong jadi seperempat lingkaran melengkung
             gp.fillArc(-logoR, -logoR, logoR * 2, logoR * 2, 2, 86);
             gp.dispose();
         }
@@ -188,7 +186,7 @@ public class Renderer {
         g.drawString(date, StartMenuClone.SW - 70, y + 32);
         g.setColor(new Color(255, 255, 255, 55));
         g.drawLine(StartMenuClone.SW - 85, y + 5, StartMenuClone.SW - 85, y + StartMenuClone.TB_H - 5);
-        }
+    }
 
     void drawStartBtn(Graphics2D g, int ty) {
         int w = 50, h = StartMenuClone.TB_H;
@@ -371,7 +369,6 @@ public class Renderer {
         }
     }
 
-    // ── Helper: gambar panah segitiga manual (pengganti karakter "▶") ──────
     void drawArrow(Graphics2D g, int x, int y) {
         int[] px = {x, x + 6, x};
         int[] py = {y, y + 5, y + 10};
@@ -433,7 +430,6 @@ public class Renderer {
         drawArrowUp(g, bx + mw + (bw - mw - 2) / 2, by + 9);
     }
 
-    // ── Helper: gambar panah segitiga ke atas (pengganti karakter "▲") ─────
     void drawArrowUp(Graphics2D g, int cx, int cy) {
         int[] px = {cx - 5, cx + 5, cx};
         int[] py = {cy + 8, cy + 8, cy};
