@@ -1,0 +1,232 @@
+import java.awt.event.*;
+import java.util.List;
+
+/**
+ * Menangani semua input dari mouse (klik, geser, scroll) dan keyboard.
+ * Di-attach ke canvas milik StartMenuClone.
+ */
+public class InputHandler extends MouseAdapter implements KeyListener {
+
+    private final StartMenuClone app;
+
+    public InputHandler(StartMenuClone app) {
+        this.app = app;
+    }
+
+    // =====================================================================
+    //  MOUSE EVENTS
+    // =====================================================================
+
+    @Override
+    public void mouseMoved(MouseEvent e) {
+        updateHover(e.getX(), e.getY());
+    }
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+        if (app.dragging != null) {
+            app.dragging.x = e.getX() - app.dragDX;
+            app.dragging.y = e.getY() - app.dragDY;
+        }
+    }
+
+    @Override
+    public void mouseWheelMoved(MouseWheelEvent e) {
+        if (!app.menuReady()) return;
+        int mx = e.getX(), my = e.getY();
+        int py = (int) app.menuPanelY;
+        if (mx >= 0 && mx <= StartMenuClone.L_W && my >= py && my <= py + StartMenuClone.MNU_H) {
+            app.scrollOff += e.getWheelRotation() * StartMenuClone.ITEM_H;
+            if (app.scrollOff < 0) app.scrollOff = 0;
+        }
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+        int mx = e.getX(), my = e.getY();
+
+        // ── Sleep: klik mana saja = bangun ───────────────────────────
+        if (app.sleeping) { app.sleeping = false; return; }
+        if (app.shuttingDown || app.restarting) return;
+
+        // ── Drag / close fake windows ─────────────────────────────────
+        for (int i = app.windows.size() - 1; i >= 0; i--) {
+            FakeWindow fw = app.windows.get(i);
+            if (inside(mx, my, fw.closeX, fw.closeY, fw.closeW, fw.closeH)) {
+                app.windows.remove(i); return;
+            }
+            if (mx >= fw.x && mx <= fw.x + fw.w && my >= fw.y && my <= fw.y + 28) {
+                app.windows.remove(i); app.windows.add(fw);
+                app.dragging = fw; app.dragDX = mx - fw.x; app.dragDY = my - fw.y; return;
+            }
+            if (inside(mx, my, fw.x, fw.y, fw.w, fw.h)) {
+                app.windows.remove(i); app.windows.add(fw); return;
+            }
+        }
+
+        // ── Dropdown shutdown ─────────────────────────────────────────
+        if (app.shutDrop) {
+            int dw = 155, ih = 23, dh = app.SHUT_OPTS.length * ih + 8;
+            int dx = StartMenuClone.MNU_W - dw - 6,
+                    dy = StartMenuClone.MNU_H - StartMenuClone.SRCH_H - 4 - dh - 4;
+            int py = (int) app.menuPanelY;
+            if (mx >= dx && mx <= dx + dw && my >= py + dy && my <= py + dy + dh) {
+                int idx = (my - py - dy - 4) / ih;
+                if (idx >= 0 && idx < app.SHUT_OPTS.length) app.doPowerAction(app.SHUT_OPTS[idx]);
+                return;
+            } else {
+                app.shutDrop = false;
+            }
+        }
+
+        // ── Tombol Start ──────────────────────────────────────────────
+        if (inside(mx, my, 0, StartMenuClone.SH - StartMenuClone.TB_H,
+                72, StartMenuClone.TB_H)) {
+            app.toggleMenu(); return;
+        }
+
+        if (!app.menuReady()) return;
+        int py = (int) app.menuPanelY;
+        int rx = mx, ry = my - py;
+
+        // Klik di luar menu = tutup menu
+        if (rx < 0 || rx > StartMenuClone.MNU_W || ry < 0 || ry > StartMenuClone.MNU_H) {
+            app.closeMenu(); return;
+        }
+
+        // ── Search box ────────────────────────────────────────────────
+        int sx = 6, sy = StartMenuClone.MNU_H - StartMenuClone.SRCH_H - 4,
+                sw = StartMenuClone.L_W - 14;
+        if (inside(rx, ry, sx, sy, sw, StartMenuClone.SRCH_H)) {
+            app.searchFocused = true; return;
+        }
+        app.searchFocused = false;
+
+        // ── Shutdown button ───────────────────────────────────────────
+        int bx = StartMenuClone.L_W + 6,
+                by = StartMenuClone.MNU_H - StartMenuClone.SRCH_H - 4,
+                bwt = StartMenuClone.R_W - 12,
+                bh  = StartMenuClone.SRCH_H,
+                mw  = bwt - 22;
+        if (inside(rx, ry, bx, by, mw, bh))           { app.doPowerAction("Shut down"); return; }
+        if (inside(rx, ry, bx + mw + 2, by, bwt - mw - 2, bh)) { app.shutDrop = !app.shutDrop; return; }
+
+        // ── Back button ───────────────────────────────────────────────
+        boolean searching = app.searchText.length() > 0;
+        boolean showBack  = app.inAccessories && !searching;
+        if (showBack) {
+            int aBot = StartMenuClone.MNU_H - StartMenuClone.SRCH_H - 8 - 28;
+            if (inside(rx, ry, 3, aBot + 2, StartMenuClone.L_W - 10, 26)) {
+                app.inAccessories = false; app.scrollOff = 0; return;
+            }
+        }
+
+        // ── Daftar kiri ───────────────────────────────────────────────
+        List<AppItem> list = app.buildSearchList(searching);
+        int backH = showBack ? 28 : 0;
+        int aTop  = 4, aBot = StartMenuClone.MNU_H - StartMenuClone.SRCH_H - 8 - backH;
+        if (rx >= 0 && rx <= StartMenuClone.L_W && ry >= aTop && ry <= aBot) {
+            int idx = (ry - aTop + app.scrollOff) / StartMenuClone.ITEM_H;
+            if (idx >= 0 && idx < list.size()) {
+                AppItem a = list.get(idx);
+                if (a.isFolder()) { app.inAccessories = true; app.scrollOff = 0; app.searchText = ""; }
+                else              { app.launchApp(a); }
+            }
+            return;
+        }
+
+        // ── Daftar kanan ──────────────────────────────────────────────
+        int top = StartMenuClone.HEAD_H;
+        if (rx >= StartMenuClone.L_W && rx <= StartMenuClone.MNU_W && ry >= top) {
+            int idx = (ry - top) / StartMenuClone.ITEM_H;
+            if (idx >= 0 && idx < app.rightList.size()) app.launchApp(app.rightList.get(idx));
+        }
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        app.dragging = null;
+    }
+
+    // =====================================================================
+    //  HOVER
+    // =====================================================================
+    void updateHover(int mx, int my) {
+        app.hovStart = inside(mx, my, 0, StartMenuClone.SH - StartMenuClone.TB_H,
+                72, StartMenuClone.TB_H);
+        app.hovLeft  = -1; app.hovRight  = -1; app.hovBack  = false;
+        app.hovShutMain = false; app.hovShutArrow = false; app.hovShutOpt = -1;
+        if (!app.menuReady()) return;
+
+        int py = (int) app.menuPanelY, rx = mx, ry = my - py;
+
+        if (app.shutDrop) {
+            int dw = 155, ih = 23, dh = app.SHUT_OPTS.length * ih + 8;
+            int dx = StartMenuClone.MNU_W - dw - 6,
+                    dy = StartMenuClone.MNU_H - StartMenuClone.SRCH_H - 4 - dh - 4;
+            if (rx >= dx && rx <= dx + dw && ry >= dy && ry <= dy + dh)
+                app.hovShutOpt = (ry - dy - 4) / ih;
+        }
+
+        int bx  = StartMenuClone.L_W + 6,
+                by  = StartMenuClone.MNU_H - StartMenuClone.SRCH_H - 4,
+                bwt = StartMenuClone.R_W - 12,
+                bh  = StartMenuClone.SRCH_H,
+                mw  = bwt - 22;
+        app.hovShutMain  = inside(rx, ry, bx, by, mw, bh);
+        app.hovShutArrow = inside(rx, ry, bx + mw + 2, by, bwt - mw - 2, bh);
+
+        boolean searching = app.searchText.length() > 0;
+        boolean showBack  = app.inAccessories && !searching;
+        if (showBack) {
+            int ab = StartMenuClone.MNU_H - StartMenuClone.SRCH_H - 8 - 28;
+            app.hovBack = inside(rx, ry, 3, ab + 2, StartMenuClone.L_W - 10, 26);
+        }
+
+        List<AppItem> list = app.buildSearchList(searching);
+        int backH = showBack ? 28 : 0;
+        int aTop  = 4, aBot = StartMenuClone.MNU_H - StartMenuClone.SRCH_H - 8 - backH;
+        if (rx >= 0 && rx <= StartMenuClone.L_W && ry >= aTop && ry <= aBot) {
+            int idx = (ry - aTop + app.scrollOff) / StartMenuClone.ITEM_H;
+            if (idx >= 0 && idx < list.size()) app.hovLeft = idx;
+        }
+
+        int top = StartMenuClone.HEAD_H;
+        if (rx >= StartMenuClone.L_W && rx <= StartMenuClone.MNU_W && ry >= top) {
+            int idx = (ry - top) / StartMenuClone.ITEM_H;
+            if (idx >= 0 && idx < app.rightList.size()) app.hovRight = idx;
+        }
+    }
+
+    // =====================================================================
+    //  KEYBOARD
+    // =====================================================================
+    @Override
+    public void keyTyped(KeyEvent e) {
+        if (!app.searchFocused) return;
+        char c = e.getKeyChar();
+        if (c >= 32 && c < 127 && app.searchText.length() < 42) {
+            app.searchText += c;
+            app.scrollOff  = 0;
+        }
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+            if (app.searchFocused) { app.searchText = ""; app.searchFocused = false; }
+            else app.closeMenu();
+        }
+        if (!app.searchFocused) return;
+        if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE && app.searchText.length() > 0)
+            app.searchText = app.searchText.substring(0, app.searchText.length() - 1);
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) { /* tidak digunakan */ }
+
+    // ── Helper ───────────────────────────────────────────────────────────
+    boolean inside(int px, int py, int x, int y, int w, int h) {
+        return px >= x && px <= x + w && py >= y && py <= y + h;
+    }
+}
