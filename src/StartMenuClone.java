@@ -2,23 +2,6 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Kelas utama aplikasi.
- * Mengelola state, game-loop, data menu, dan aksi pengguna.
- * Rendering didelegasikan ke {@link Renderer}.
- * Logika input (klik, hover, keyboard) didelegasikan ke {@link InputHandler}.
- *
- * Catatan arsitektur input:
- * Class ini TIDAK meng-implement MouseListener/KeyListener/WindowListener
- * dan TIDAK memanggil addMouseListener/addKeyListener/addWindowListener.
- * Sebagai gantinya, satu listener tunggal didaftarkan langsung ke
- * java.awt.Toolkit (lihat konstruktor + method dispatchRawEvent). Listener
- * itu adalah satu-satunya titik di seluruh program yang menyentuh tipe
- * data dari java.awt.event, dan fungsinya murni menerjemahkan event mentah
- * menjadi pemanggilan method InputHandler dengan parameter primitif
- * (int x, int y, char c, dst) — mirip gaya pembacaan status mouse/keyboard
- * di pustaka grafis dasar seperti GDI/BGI.
- */
 public class StartMenuClone extends Frame implements Runnable {
 
     // =====================================================================
@@ -177,14 +160,6 @@ public class StartMenuClone extends Frame implements Runnable {
         new Thread(this, "render-loop").start();
     }
 
-    /**
-     * Satu-satunya tempat di seluruh program yang menyentuh tipe-tipe dari
-     * java.awt.event (MouseEvent, KeyEvent, WindowEvent, MouseWheelEvent,
-     * AWTEventListener). Fungsinya murni "menerjemahkan" event mentah AWT
-     * menjadi pemanggilan method InputHandler dengan parameter primitif —
-     * tidak ada class lain di project ini yang meng-extend/implement
-     * antarmuka listener apa pun dari java.awt.event.
-     */
     private void dispatchRawEvent(java.awt.AWTEvent ev) {
         if (ev instanceof java.awt.event.MouseWheelEvent) {
             java.awt.event.MouseWheelEvent we = (java.awt.event.MouseWheelEvent) ev;

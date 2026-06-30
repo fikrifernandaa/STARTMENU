@@ -2,10 +2,6 @@ import java.awt.*;
 import java.awt.image.BufferStrategy;
 import java.util.List;
 
-/**
- * Bertanggung jawab atas seluruh logika penggambaran (rendering) layar.
- * Dipanggil dari game-loop di StartMenuClone.
- */
 public class Renderer {
 
     private final StartMenuClone app;

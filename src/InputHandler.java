@@ -1,17 +1,5 @@
 import java.util.List;
 
-/**
- * Menangani logika input (klik, geser, scroll, keyboard).
- *
- * Class ini TIDAK meng-extend / meng-implement antarmuka apa pun dari
- * java.awt.event (tidak ada MouseAdapter, MouseListener, KeyListener, dsb).
- * Class ini murni berisi method-method polling biasa yang dipanggil secara
- * manual dari titik tunggal penangkap event mentah di StartMenuClone
- * (lihat StartMenuClone.dispatchRawEvent). Dengan begitu, InputHandler
- * sendiri hanya bekerja dengan tipe data primitif (int, char, boolean),
- * persis seperti gaya pemrosesan input di GDI/BGI klasik (membaca posisi
- * & status tombol, lalu memutuskan aksi lewat perbandingan koordinat).
- */
 public class InputHandler {
 
     private final StartMenuClone app;
@@ -213,8 +201,6 @@ public class InputHandler {
         }
     }
 
-    /** Kode tombol non-cetak yang dikenali (nilai sama dengan KeyEvent.VK_*,
-     *  tapi di sini hanya dipakai sebagai angka biasa, tanpa import KeyEvent). */
     public static final int KEY_ESCAPE    = 27;  // sama dengan VK_ESCAPE
     public static final int KEY_BACKSPACE = 8;   // sama dengan VK_BACK_SPACE
 
